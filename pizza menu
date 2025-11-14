@@ -1,0 +1,142 @@
+﻿using System;
+
+class PizzeriaProgram
+{
+    static void Main()
+    {
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
+
+        while (true)
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("\n=== Головне меню Pizza Service ===");
+            Console.ResetColor();
+
+            Console.WriteLine("1 — Перегляд товарів");
+            Console.WriteLine("2 — Розрахунок покупки");
+            Console.WriteLine("3 — Інформація про магазин");
+            Console.WriteLine("4 — Налаштування");
+            Console.WriteLine("0 — Вихід");
+
+            Console.Write("\nВаш вибір: ");
+            string input = Console.ReadLine();
+
+            switch (input)
+            {
+                case "1":
+                    ShowProducts();
+                    break;
+
+                case "2":
+                    CalculateOrder();
+                    break;
+
+                case "3":
+                    ShowInfo();
+                    break;
+
+                case "4":
+                    Settings();
+                    break;
+
+                case "0":
+                    Console.WriteLine("Програма завершена. Гарного дня!");
+                    return;
+
+                default:
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Помилка: невірний вибір. Спробуйте ще раз.");
+                    Console.ResetColor();
+                    break;
+            }
+        }
+    }
+
+    // ------------------ ФУНКЦІЇ МЕНЮ -----------------------
+
+    static void ShowProducts()
+    {
+        Console.WriteLine("\n=== Меню товарів ===");
+        Console.WriteLine("🍕 Маргарита – 150 грн/шт");
+        Console.WriteLine("🍕 Пепероні – 180 грн/шт");
+        Console.WriteLine("🍕 Гавайська – 170 грн/шт");
+        Console.WriteLine("🥤 Напій – 40 грн/шт");
+        Console.WriteLine("🍟 Картопля фрі – 60 грн/порція");
+        Console.WriteLine("🧂 Соус – 25 грн/шт\n");
+    }
+
+    static void CalculateOrder()
+    {
+        Console.WriteLine("\n=== Розрахунок покупки ===");
+
+        double priceMargarita = 150;
+        double pricePeperoni = 180;
+        double priceHawaiian = 170;
+        double priceDrink = 40;
+        double priceFries = 60;
+        double priceSauce = 25;
+
+        double margarita = ReadNumber("Введіть кількість піци Маргарита: ");
+        double peperoni  = ReadNumber("Введіть кількість піци Пепероні: ");
+        double hawaiian  = ReadNumber("Введіть кількість піци Гавайська: ");
+        double drink     = ReadNumber("Введіть кількість напоїв: ");
+        double fries     = ReadNumber("Введіть кількість порцій картоплі фрі: ");
+        double sauce     = ReadNumber("Введіть кількість соусів: ");
+
+        double total = margarita * priceMargarita +
+                       peperoni * pricePeperoni +
+                       hawaiian * priceHawaiian +
+                       drink * priceDrink +
+                       fries * priceFries +
+                       sauce * priceSauce;
+
+        Random rand = new Random();
+        double discount = rand.Next(5, 16);
+        double discountSum = total * (discount / 100);
+        double totalWithDiscount = total - discountSum;
+
+        Console.WriteLine("\n===============================");
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine($"Загальна сума: {total:F2} грн");
+        Console.ForegroundColor = ConsoleColor.Cyan;
+        Console.WriteLine($"Знижка: {discount}%");
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine($"Сума зі знижкою: {totalWithDiscount:F2} грн");
+        Console.ResetColor();
+        Console.WriteLine("===============================");
+    }
+
+    static void ShowInfo()
+    {
+        Console.WriteLine("\n=== Інформація про магазин ===");
+        Console.WriteLine("Pizza Service — найсмачніша піца у вашому місті!");
+        Console.WriteLine("Графік роботи: 10:00–22:00");
+        Console.WriteLine("Телефон: +380 50 539 65 34\n");
+    }
+
+    static void Settings()
+    {
+        Console.WriteLine("\n=== Налаштування ===");
+        Console.WriteLine("Функція в розробці...\n");
+    }
+
+    // ------------ ФУНКЦІЯ ДЛЯ БЕЗПЕЧНОГО ВВЕДЕННЯ ЧИСЛА ------------
+
+    static double ReadNumber(string message)
+    {
+        double number;
+
+        while (true)
+        {
+            Console.Write(message);
+            string input = Console.ReadLine();
+
+            if (double.TryParse(input, out number) && number >= 0)
+                return number;
+
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Помилка: введіть коректне число!");
+            Console.ResetColor();
+        }
+    }
+}
