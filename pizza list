@@ -1,0 +1,312 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+struct Product
+{
+    public int Id;
+    public string Name;
+    public double Price;
+    public int Quantity;
+
+    public Product(int id, string name, double price, int quantity)
+    {
+        Id = id;
+        Name = name;
+        Price = price;
+        Quantity = quantity;
+    }
+}
+
+class PizzeriaProgram
+{
+    // ==== ТЕПЕР ВИКОРИСТОВУЄМО СПИСОК ====
+    static List<Product> products = new List<Product>();
+
+    static void Main()
+    {
+        Console.OutputEncoding = System.Text.Encoding.UTF8;
+
+        if (!LoginSystem())
+        {
+            Console.WriteLine("Доступ заблоковано!");
+            return;
+        }
+
+        while (true)
+        {
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("\n===== Головне меню =====");
+            Console.ResetColor();
+
+            Console.WriteLine("1 — Додати товари");
+            Console.WriteLine("2 — Вивести всі товари (таблиця)");
+            Console.WriteLine("3 — Пошук товару");
+            Console.WriteLine("4 — Видалити товар");
+            Console.WriteLine("5 — Сортування");
+            Console.WriteLine("6 — Статистика");
+            Console.WriteLine("0 — Вихід");
+
+            Console.Write("Ваш вибір: ");
+            string choice = Console.ReadLine();
+
+            switch (choice)
+            {
+                case "1": AddProducts(); break;
+                case "2": ShowProducts(); break;
+                case "3": SearchProduct(); break;
+                case "4": DeleteProduct(); break;
+                case "5": SortProducts(); break;
+                case "6": ShowStatistics(); break;
+                case "0": return;
+                default:
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Невірний вибір!");
+                    Console.ResetColor();
+                    break;
+            }
+        }
+    }
+
+    // =====================================================================
+    //                             СИСТЕМА ВХОДУ
+    // =====================================================================
+    static bool LoginSystem()
+    {
+        string login = "andr";
+        string password = "1234";
+
+        int attempts = 3;
+
+        while (attempts > 0)
+        {
+            Console.Write("Логін: ");
+            string l = Console.ReadLine();
+
+            Console.Write("Пароль: ");
+            string p = Console.ReadLine();
+
+            if (l == login && p == password)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Вхід успішний!");
+                Console.ResetColor();
+                return true;
+            }
+
+            attempts--;
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"Помилка! Залишилось {attempts} спроб.");
+            Console.ResetColor();
+        }
+
+        return false;
+    }
+
+    // =====================================================================
+    //                            ДОДАВАННЯ
+    // =====================================================================
+    static void AddProducts()
+    {
+        int count = ReadInt("\nСкільки товарів додати? ");
+
+        for (int i = 0; i < count; i++)
+        {
+            Console.WriteLine($"\nТовар #{i + 1}");
+
+            int id = ReadInt("ID: ");
+            string name = ReadString("Назва: ");
+            double price = ReadDouble("Ціна: ");
+            int qty = ReadInt("Кількість: ");
+
+            products.Add(new Product(id, name, price, qty));
+        }
+
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("\nТовари додано!");
+        Console.ResetColor();
+    }
+
+    // =====================================================================
+    //                               ТАБЛИЦЯ
+    // =====================================================================
+    static void ShowProducts()
+    {
+        if (products.Count == 0)
+        {
+            Console.WriteLine("Немає товарів.");
+            return;
+        }
+
+        Console.WriteLine("\n================== ТАБЛИЦЯ ТОВАРІВ ==================\n");
+        Console.WriteLine($"{"ID",-5} {"Назва",-20} {"Ціна",-10} {"К-сть",-8}");
+        Console.WriteLine("-----------------------------------------------------");
+
+        foreach (var p in products)
+        {
+            Console.WriteLine($"{p.Id,-5} {p.Name,-20} {p.Price,-10:F2} {p.Quantity,-8}");
+        }
+    }
+
+    // =====================================================================
+    //                                ПОШУК
+    // =====================================================================
+    static void SearchProduct()
+    {
+        Console.WriteLine("\nПошук за: 1 - ID, 2 - Назва");
+        string c = Console.ReadLine();
+
+        if (c == "1")
+        {
+            int id = ReadInt("Введіть ID: ");
+            var found = products.FirstOrDefault(x => x.Id == id);
+
+            if (found.Name == null)
+                Console.WriteLine("Не знайдено!");
+            else
+                Console.WriteLine($"Знайдено: {found.Name}, {found.Price} грн");
+        }
+        else if (c == "2")
+        {
+            string name = ReadString("Введіть назву: ");
+            var found = products.Where(x => x.Name.Contains(name, StringComparison.OrdinalIgnoreCase));
+
+            foreach (var p in found)
+            {
+                Console.WriteLine($"[{p.Id}] {p.Name} — {p.Price} грн");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Невірний вибір!");
+        }
+    }
+
+    // =====================================================================
+    //                               ВИДАЛЕННЯ
+    // =====================================================================
+    static void DeleteProduct()
+    {
+        int id = ReadInt("Введіть ID товару для видалення: ");
+
+        var obj = products.FirstOrDefault(x => x.Id == id);
+
+        if (obj.Name == null)
+        {
+            Console.WriteLine("Товар не знайдено!");
+            return;
+        }
+
+        products.RemoveAll(x => x.Id == id);
+        Console.WriteLine("Видалено!");
+    }
+
+    // =====================================================================
+    //                              СОРТУВАННЯ
+    // =====================================================================
+    static void SortProducts()
+    {
+        Console.WriteLine("\nСортувати за:");
+        Console.WriteLine("1 — Назва (вбудований Sort())");
+        Console.WriteLine("2 — Ціна (власний BubbleSort)");
+        string c = Console.ReadLine();
+
+        if (c == "1")
+        {
+            products.Sort((a, b) => a.Name.CompareTo(b.Name));
+            Console.WriteLine("Відсортовано за назвою!");
+        }
+        else if (c == "2")
+        {
+            BubbleSortByPrice();
+            Console.WriteLine("Відсортовано власним алгоритмом (Bubble Sort).");
+        }
+        else
+        {
+            Console.WriteLine("Невірний вибір!");
+        }
+    }
+
+    // ==== ВЛАСНЕ СОРТУВАННЯ (BUBBLE SORT) ====
+    static void BubbleSortByPrice()
+    {
+        for (int i = 0; i < products.Count - 1; i++)
+        {
+            for (int j = 0; j < products.Count - i - 1; j++)
+            {
+                if (products[j].Price > products[j + 1].Price)
+                {
+                    var tmp = products[j];
+                    products[j] = products[j + 1];
+                    products[j + 1] = tmp;
+                }
+            }
+        }
+    }
+
+    // =====================================================================
+    //                               СТАТИСТИКА
+    // =====================================================================
+    static void ShowStatistics()
+    {
+        if (products.Count == 0)
+        {
+            Console.WriteLine("Немає товарів.");
+            return;
+        }
+
+        int count = products.Count;
+        double min = products.Min(p => p.Price);
+        double max = products.Max(p => p.Price);
+        double sum = products.Sum(p => p.Price);
+        double avg = products.Average(p => p.Price);
+
+        Console.WriteLine("\n===== СТАТИСТИКА =====");
+        Console.WriteLine($"Кількість товарів: {count}");
+        Console.WriteLine($"Мінімальна ціна: {min}");
+        Console.WriteLine($"Максимальна ціна: {max}");
+        Console.WriteLine($"Сумарна вартість: {sum}");
+        Console.WriteLine($"Середня ціна: {avg:F2}");
+    }
+
+    // =====================================================================
+    //                         ФУНКЦІЇ ВВЕДЕННЯ
+    // =====================================================================
+
+    static int ReadInt(string msg)
+    {
+        while (true)
+        {
+            Console.Write(msg);
+            if (int.TryParse(Console.ReadLine(), out int n) && n >= 0)
+                return n;
+
+            Console.WriteLine("Помилка! Введіть додатне число.");
+        }
+    }
+
+    static double ReadDouble(string msg)
+    {
+        while (true)
+        {
+            Console.Write(msg);
+            if (double.TryParse(Console.ReadLine(), out double n) && n >= 0)
+                return n;
+
+            Console.WriteLine("Помилка! Введіть число!");
+        }
+    }
+
+    static string ReadString(string msg)
+    {
+        string s;
+        do
+        {
+            Console.Write(msg);
+            s = Console.ReadLine();
+        }
+        while (string.IsNullOrWhiteSpace(s));
+
+        return s;
+    }
+}
