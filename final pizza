@@ -1,0 +1,249 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+
+struct Product
+{
+    public int Id;
+    public string Name;
+    public double Price;
+    public int Quantity;
+
+    public Product(int id, string name, double price, int qty)
+    {
+        Id = id;
+        Name = name;
+        Price = price;
+        Quantity = qty;
+    }
+}
+
+class Program
+{
+    const string PRODUCTS_FILE = "products.csv";
+    const string USERS_FILE = "users.csv";
+
+    static void Main()
+    {
+        Console.OutputEncoding = Encoding.UTF8;
+
+        EnsureFiles();
+
+        Console.WriteLine("1 — Вхід");
+        Console.WriteLine("2 — Реєстрація");
+        Console.Write("Ваш вибір: ");
+        string c = Console.ReadLine();
+
+        if (c == "2")
+            Register();
+
+        if (!Login())
+        {
+            Console.WriteLine("Доступ заборонено!");
+            return;
+        }
+
+        while (true)
+        {
+            Console.WriteLine("\n===== МЕНЮ =====");
+            Console.WriteLine("1 — Додати товар");
+            Console.WriteLine("2 — Вивести товари");
+            Console.WriteLine("3 — Пошук");
+            Console.WriteLine("4 — Видалити");
+            Console.WriteLine("5 — Статистика");
+            Console.WriteLine("0 — Вихід");
+
+            Console.Write("Вибір: ");
+            string choice = Console.ReadLine();
+
+            switch (choice)
+            {
+                case "1": AddProduct(); break;
+                case "2": ShowProducts(); break;
+                case "3": SearchProduct(); break;
+                case "4": DeleteProduct(); break;
+                case "5": ShowStatistics(); break;
+                case "0": return;
+            }
+        }
+    }
+
+    // ======================= FILE INIT =======================
+
+    static void EnsureFiles()
+    {
+        if (!File.Exists(PRODUCTS_FILE))
+            File.WriteAllText(PRODUCTS_FILE, "Id;Name;Price;Quantity\n");
+
+        if (!File.Exists(USERS_FILE))
+            File.WriteAllText(USERS_FILE, "Id;Email;PasswordHash\n");
+    }
+
+    // ======================= AUTH =======================
+
+    static void Register()
+    {
+        Console.Write("Email: ");
+        string email = Console.ReadLine();
+
+        if (UserExists(email))
+        {
+            Console.WriteLine("Користувач існує!");
+            return;
+        }
+
+        Console.Write("Пароль: ");
+        string pass = Console.ReadLine();
+
+        int id = GenerateNextId(USERS_FILE);
+        string hash = HashPassword(pass);
+
+        File.AppendAllText(USERS_FILE, $"{id};{email};{hash}\n");
+        Console.WriteLine("Реєстрація успішна!");
+    }
+
+    static bool Login()
+    {
+        Console.Write("Email: ");
+        string email = Console.ReadLine();
+
+        Console.Write("Пароль: ");
+        string pass = Console.ReadLine();
+
+        string hash = HashPassword(pass);
+
+        foreach (var line in File.ReadLines(USERS_FILE).Skip(1))
+        {
+            var p = line.Split(';');
+            if (p.Length == 3 && p[1] == email && p[2] == hash)
+            {
+                Console.WriteLine("Вхід успішний!");
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static bool UserExists(string email)
+    {
+        return File.ReadLines(USERS_FILE)
+            .Skip(1)
+            .Any(l => l.Split(';').Length == 3 && l.Split(';')[1] == email);
+    }
+
+    static string HashPassword(string input)
+    {
+        using var sha = SHA256.Create();
+        var bytes = sha.ComputeHash(Encoding.UTF8.GetBytes(input));
+        return BitConverter.ToString(bytes).Replace("-", "");
+    }
+
+    // ======================= PRODUCTS =======================
+
+    static void AddProduct()
+    {
+        int id = GenerateNextId(PRODUCTS_FILE);
+
+        Console.Write("Назва: ");
+        string name = Console.ReadLine();
+
+        Console.Write("Ціна: ");
+        if (!double.TryParse(Console.ReadLine(), out double price))
+            return;
+
+        Console.Write("Кількість: ");
+        if (!int.TryParse(Console.ReadLine(), out int qty))
+            return;
+
+        File.AppendAllText(PRODUCTS_FILE,
+            $"{id};{name};{price};{qty}\n");
+
+        Console.WriteLine("Товар додано!");
+    }
+
+    static List<Product> ReadProducts()
+    {
+        var list = new List<Product>();
+
+        foreach (var line in File.ReadLines(PRODUCTS_FILE).Skip(1))
+        {
+            var p = line.Split(';');
+            if (p.Length != 4) continue;
+
+            if (int.TryParse(p[0], out int id) &&
+                double.TryParse(p[2], out double price) &&
+                int.TryParse(p[3], out int qty))
+            {
+                list.Add(new Product(id, p[1], price, qty));
+            }
+        }
+        return list;
+    }
+
+    static void ShowProducts()
+    {
+        var products = ReadProducts();
+
+        Console.WriteLine($"\n{"ID",-5} {"Назва",-20} {"Ціна",-10} {"К-сть",-6}");
+        Console.WriteLine(new string('-', 45));
+
+        foreach (var p in products)
+        {
+            Console.WriteLine($"{p.Id,-5} {p.Name,-20} {p.Price,-10:F2} {p.Quantity,-6}");
+        }
+    }
+
+    static void SearchProduct()
+    {
+        Console.Write("ID товару: ");
+        if (!int.TryParse(Console.ReadLine(), out int id)) return;
+
+        var p = ReadProducts().FirstOrDefault(x => x.Id == id);
+
+        if (p.Name == null)
+            Console.WriteLine("Не знайдено!");
+        else
+            Console.WriteLine($"{p.Name} — {p.Price} грн");
+    }
+
+    static void DeleteProduct()
+    {
+        Console.Write("ID для видалення: ");
+        if (!int.TryParse(Console.ReadLine(), out int id)) return;
+
+        var lines = File.ReadAllLines(PRODUCTS_FILE).ToList();
+        lines = lines.Where(l => !l.StartsWith(id + ";")).ToList();
+
+        File.WriteAllLines(PRODUCTS_FILE, lines);
+        Console.WriteLine("Видалено!");
+    }
+
+    static void ShowStatistics()
+    {
+        var products = ReadProducts();
+        if (products.Count == 0) return;
+
+        Console.WriteLine($"К-сть: {products.Count}");
+        Console.WriteLine($"Мін: {products.Min(p => p.Price)}");
+        Console.WriteLine($"Макс: {products.Max(p => p.Price)}");
+        Console.WriteLine($"Сума: {products.Sum(p => p.Price)}");
+        Console.WriteLine($"Середня: {products.Average(p => p.Price):F2}");
+    }
+
+    // ======================= ID GENERATOR =======================
+
+    static int GenerateNextId(string path)
+    {
+        int max = 0;
+        foreach (var line in File.ReadLines(path).Skip(1))
+        {
+            var p = line.Split(';');
+            if (p.Length > 0 && int.TryParse(p[0], out int id))
+                max = Math.Max(max, id);
+        }
+        return max + 1;
+    }
+}
